@@ -61,6 +61,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   if (!isMatch) throw ApiError.badRequest('Current password is incorrect');
 
   user.password = newPassword; // beforeUpdate hook hashes this
+  user.mustChangePassword = false;
   await user.save();
 };
 

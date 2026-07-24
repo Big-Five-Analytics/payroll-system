@@ -1,9 +1,9 @@
 const { verifyAccessToken } = require('../utils/jwt');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
-const { User, Role } = require('../models');
+const { User, Role, Employee } = require('../models');
 
-// Verifies the JWT and attaches the authenticated user (with role) to req.user
+// Verifies the JWT and attaches the authenticated user (with role + linked employee, if any) to req.user
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -15,7 +15,10 @@ const authenticate = asyncHandler(async (req, res, next) => {
   const decoded = verifyAccessToken(token); // throws JsonWebTokenError/TokenExpiredError if invalid
 
   const user = await User.findByPk(decoded.id, {
-    include: [{ model: Role, as: 'role' }],
+    include: [
+      { model: Role, as: 'role' },
+      { model: Employee, as: 'employee' },
+    ],
   });
 
   if (!user) throw ApiError.unauthorized('User no longer exists');

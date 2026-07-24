@@ -103,4 +103,19 @@ const listPayslipsForEmployee = (employeeId) =>
     order: [['issuedAt', 'DESC']],
   });
 
-module.exports = { generatePayslip, getPayslipById, listPayslipsForEmployee, PAYSLIP_DIR };
+// Employee self-service view: only payslips whose payroll run has actually been PAID.
+// A processed/approved-but-unpaid payslip shouldn't be downloadable by the employee yet.
+const listPaidPayslipsForEmployee = (employeeId) =>
+  Payslip.findAll({
+    where: { employeeId },
+    include: [{ model: Payroll, as: 'payroll', where: { status: 'paid' } }],
+    order: [['issuedAt', 'DESC']],
+  });
+
+module.exports = {
+  generatePayslip,
+  getPayslipById,
+  listPayslipsForEmployee,
+  listPaidPayslipsForEmployee,
+  PAYSLIP_DIR,
+};

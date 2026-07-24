@@ -23,4 +23,13 @@ const exportCsv = asyncHandler(async (req, res) => {
   res.send(csv);
 });
 
-module.exports = { monthlySummary, employeeHistory, exportCsv };
+const exportBankFile = asyncHandler(async (req, res) => {
+  const { month, year } = req.query;
+  const buffer = await reportService.generateBankPaymentFile(Number(month), Number(year));
+
+  res.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.attachment(`bank-payment-${year}-${month}.xlsx`);
+  res.send(buffer);
+});
+
+module.exports = { monthlySummary, employeeHistory, exportCsv, exportBankFile };

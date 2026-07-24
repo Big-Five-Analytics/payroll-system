@@ -10,25 +10,11 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const logger = require('./config/logger');
 
 const app = express();
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-].filter(Boolean);
 
 app.use(helmet());
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(null, false);
-    },
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );

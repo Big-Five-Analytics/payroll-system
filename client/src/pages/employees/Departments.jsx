@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getDepartments, createDepartment } from '../../services/employeeService';
+import { getDepartments, createDepartment, deleteDepartment } from '../../services/employeeService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -37,6 +37,17 @@ export default function Departments() {
     }
   };
 
+  const handleDelete = async (dept) => {
+    if (!confirm(`Delete the "${dept.name}" department? This only works if no employees are currently assigned to it.`)) return;
+    try {
+      await deleteDepartment(dept.id);
+      toast.success('Department deleted');
+      fetchDepartments();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete department');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -53,9 +64,18 @@ export default function Departments() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {departments.map((d) => (
-              <div key={d.id} className="rounded-lg border border-gray-200 p-4">
-                <p className="font-medium text-gray-900">{d.name}</p>
-                <p className="text-sm text-gray-500 mt-1">{d.description || 'No description'}</p>
+              <div key={d.id} className="rounded-lg border border-gray-200 p-4 flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium text-gray-900">{d.name}</p>
+                  <p className="text-sm text-gray-500 mt-1">{d.description || 'No description'}</p>
+                </div>
+                <button
+                  onClick={() => handleDelete(d)}
+                  className="text-gray-300 hover:text-red-600 shrink-0"
+                  title="Delete department"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             ))}
           </div>

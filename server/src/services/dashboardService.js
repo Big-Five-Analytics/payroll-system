@@ -6,8 +6,11 @@ const getDashboardStats = async () => {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
+  // "Total employees" reflects the current company headcount - terminated staff have
+  // effectively moved to the archive and shouldn't inflate this number. It still includes
+  // 'suspended' (still employed, just not actively working) alongside 'active'.
   const [employeeCount, activeEmployeeCount, departmentCount] = await Promise.all([
-    Employee.count(),
+    Employee.count({ where: { status: { [Op.ne]: 'terminated' } } }),
     Employee.count({ where: { status: 'active' } }),
     Department.count(),
   ]);

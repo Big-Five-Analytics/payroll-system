@@ -10,5 +10,7 @@ router.use('/reports', require('./reportRoutes'));
 router.use('/dashboard', require('./dashboardRoutes'));
 router.use('/users', require('./userRoutes'));
 router.use('/audit-logs', require('./auditLogRoutes'));
+router.use('/leave', require('./leaveRoutes'));
+router.use('/salary-advances', require('./salaryAdvanceRoutes'));
 
 module.exports = router;

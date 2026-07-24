@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getMonthlySummary } from '../../services/reportService';
 import api from '../../services/api';
@@ -7,16 +7,20 @@ import Card from '../../components/ui/Card';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import Loader from '../../components/ui/Loader';
+import { useAuth } from '../../context/AuthContext';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 6 }, (_, i) => currentYear - 3 + i);
 
 export default function Reports() {
+  const { hasRole } = useAuth();
+  const canExportBankFile = hasRole('Administrator', 'Finance Officer');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(currentYear);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [exportingBankFile, setExportingBankFile] = useState(false);
 
   const runReport = async () => {
     setLoading(true);
@@ -49,6 +53,28 @@ export default function Reports() {
     }
   };
 
+  const handleExportBankFile = async () => {
+    setExportingBankFile(true);
+    try {
+      const response = await api.get('/reports/export/bank-file', {
+        params: { month, year },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bank-payment-${year}-${month}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to export bank payment file');
+    } finally {
+      setExportingBankFile(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -69,7 +95,19 @@ export default function Reports() {
             <Download size={16} /> Export CSV
           </Button>
         )}
+        {summary && canExportBankFile && (
+          <Button variant="secondary" onClick={handleExportBankFile} disabled={exportingBankFile}>
+            <Landmark size={16} /> {exportingBankFile ? 'Preparing...' : 'Export Bank File (.xlsx)'}
+          </Button>
+        )}
       </Card>
+
+      {summary && canExportBankFile && (
+        <p className="text-xs text-gray-500 -mt-4">
+          The bank file only includes payroll records that are <strong>approved</strong> or{' '}
+          <strong>paid</strong>, and requires every included employee to have bank details on file.
+        </p>
+      )}
 
       {loading && <Loader />}
 

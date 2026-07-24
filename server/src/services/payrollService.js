@@ -10,17 +10,24 @@ const {
   Allowance,
   Deduction,
   TaxRate,
+  SalaryAdvanceApplication,
 } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { calculatePAYE, calculateNAPSA, calculateNHIMA, round2 } = require('../utils/payrollCalculator');
 
 /**
- * Core payroll engine. For each active employee (or a given subset), computes:
- *   grossPay = basicSalary + taxable allowances + non-taxable allowances
- *   PAYE     = progressive tax on (basicSalary + taxable allowances)
- *   NAPSA    = 5% of basic salary, capped at the statutory ceiling
- *   NHIMA    = 1% of gross pay
- *   netPay   = grossPay - PAYE - NAPSA - NHIMA - other deductions
+ * Core payroll engine. For each active employee (or a given subset), computes pay
+ * using the ZRA method:
+ *   grossPay      = basicSalary + all allowances
+ *   NAPSA         = 5% of grossPay
+ *   NHIMA         = 1% of basicSalary
+ *   taxableIncome = grossPay - NAPSA - NHIMA
+ *   PAYE          = progressive tax on taxableIncome
+ *   netPay        = grossPay - PAYE - NAPSA - NHIMA - other deductions - salary advance recovery
+ *
+ * Any approved-but-not-yet-recovered salary advance for the employee is automatically
+ * pulled in as a one-time deduction on their next payroll run, then marked recovered -
+ * it is never a standing deduction that would repeat on subsequent runs.
  *
  * Runs inside a transaction: either the whole batch commits, or none of it does,
  * so a failure partway through never leaves a half-processed payroll period.
@@ -64,33 +71,35 @@ const generatePayroll = async ({ month, year, employeeIds, processedBy }) => {
 
       const basicSalary = Number(employee.basicSalary);
 
-      let taxableAllowances = 0;
-      let nonTaxableAllowances = 0;
-      const allowanceItems = [];
-      for (const ea of employee.allowances) {
-        const amount = Number(ea.amount);
-        if (ea.allowance.isTaxable) taxableAllowances += amount;
-        else nonTaxableAllowances += amount;
-        allowanceItems.push({ label: ea.allowance.name, amount });
-      }
+      const allowanceItems = employee.allowances.map((ea) => ({
+        label: ea.allowance.name,
+        amount: Number(ea.amount),
+      }));
+      const totalAllowances = round2(allowanceItems.reduce((sum, a) => sum + a.amount, 0));
 
-      let otherDeductions = 0;
-      const deductionItems = [];
-      for (const ed of employee.deductions) {
-        const amount = Number(ed.amount);
-        otherDeductions += amount;
-        deductionItems.push({ label: ed.deduction.name, amount });
-      }
+      const deductionItems = employee.deductions.map((ed) => ({
+        label: ed.deduction.name,
+        amount: Number(ed.amount),
+      }));
+      const otherDeductions = round2(deductionItems.reduce((sum, d) => sum + d.amount, 0));
 
-      const totalAllowances = round2(taxableAllowances + nonTaxableAllowances);
+      // Pull in any approved, not-yet-recovered salary advances for this employee -
+      // one-time deduction, applied exactly once on the next payroll run.
+      const pendingAdvances = await SalaryAdvanceApplication.findAll({
+        where: { employeeId: employee.id, status: 'approved', recovered: false },
+        transaction: t,
+      });
+      const advanceRecovery = round2(pendingAdvances.reduce((sum, a) => sum + Number(a.amountRequested), 0));
+
       const grossPay = round2(basicSalary + totalAllowances);
-      const taxableIncome = round2(basicSalary + taxableAllowances);
-
+      const napsaContribution = calculateNAPSA(grossPay);
+      const nhimaContribution = calculateNHIMA(basicSalary);
+      const taxableIncome = round2(grossPay - napsaContribution - nhimaContribution);
       const payeTax = calculatePAYE(taxableIncome, activeBands);
-      const napsaContribution = calculateNAPSA(basicSalary);
-      const nhimaContribution = calculateNHIMA(grossPay);
 
-      const totalDeductions = round2(payeTax + napsaContribution + nhimaContribution + otherDeductions);
+      const totalDeductions = round2(
+        payeTax + napsaContribution + nhimaContribution + otherDeductions + advanceRecovery
+      );
       const netPay = round2(grossPay - totalDeductions);
 
       const payroll = await Payroll.create(
@@ -104,7 +113,7 @@ const generatePayroll = async ({ month, year, employeeIds, processedBy }) => {
           payeTax,
           napsaContribution,
           nhimaContribution,
-          otherDeductions,
+          otherDeductions: round2(otherDeductions + advanceRecovery),
           totalDeductions,
           netPay,
           status: 'processed',
@@ -121,7 +130,22 @@ const generatePayroll = async ({ month, year, employeeIds, processedBy }) => {
         { payrollId: payroll.id, type: 'statutory', label: 'NAPSA Contribution', amount: napsaContribution },
         { payrollId: payroll.id, type: 'statutory', label: 'NHIMA Contribution', amount: nhimaContribution },
       ];
+      if (advanceRecovery > 0) {
+        items.push({
+          payrollId: payroll.id,
+          type: 'deduction',
+          label: 'Salary Advance Recovery',
+          amount: advanceRecovery,
+        });
+      }
       await PayrollItem.bulkCreate(items, { transaction: t });
+
+      if (pendingAdvances.length) {
+        await SalaryAdvanceApplication.update(
+          { recovered: true, recoveredInPayrollId: payroll.id },
+          { where: { id: { [Op.in]: pendingAdvances.map((a) => a.id) } }, transaction: t }
+        );
+      }
 
       results.push(payroll);
     }

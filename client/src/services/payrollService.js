@@ -11,6 +11,8 @@ export const generatePayslip = (payrollId) => api.post(`/payslips/generate/${pay
 export const getPayslip = (id) => api.get(`/payslips/${id}`);
 export const getEmployeePayslips = (employeeId) => api.get(`/payslips/employee/${employeeId}`);
 
+export const getMyPayslips = () => api.get('/payslips/my');
+
 // Payslip downloads require the JWT bearer token, so a plain <a href> won't work -
 // fetch the PDF as a blob through the authenticated axios instance instead.
 export const downloadPayslip = async (id, filename) => {

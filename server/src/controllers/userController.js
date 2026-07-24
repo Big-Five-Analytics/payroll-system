@@ -8,10 +8,15 @@ const listUsers = asyncHandler(async (req, res) => {
 });
 
 const createUser = asyncHandler(async (req, res) => {
-  const user = await userService.createUser(req.body);
+  const { user, defaultPassword } = await userService.createUser(req.body);
   const safeUser = user.toJSON();
   delete safeUser.password;
-  ApiResponse.send(res, 201, safeUser, 'User created successfully');
+  ApiResponse.send(
+    res,
+    201,
+    { user: safeUser, defaultPassword },
+    'User created - share the default password with them securely, they will be prompted to change it after logging in'
+  );
 });
 
 const updateUser = asyncHandler(async (req, res) => {

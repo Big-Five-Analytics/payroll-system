@@ -47,9 +47,10 @@ export default function Employees() {
   }, []);
 
   const handleDelete = async (employee) => {
-    if (!confirm(`Terminate ${employee.firstName} ${employee.lastName}? This preserves payroll history.`)) return;
+    if (!confirm(`Terminate ${employee.firstName} ${employee.lastName}? Their record moves to the Terminated Employees archive and they'll no longer count toward headcount.`)) return;
+    const reason = window.prompt('Reason for termination (optional):') || undefined;
     try {
-      await deleteEmployee(employee.id);
+      await deleteEmployee(employee.id, reason);
       toast.success('Employee terminated');
       fetchEmployees();
     } catch (err) {

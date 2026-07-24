@@ -26,6 +26,14 @@ module.exports = (sequelize, DataTypes) => {
       isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
       lastLoginAt: { type: DataTypes.DATE, allowNull: true },
       refreshToken: { type: DataTypes.STRING, allowNull: true },
+      mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: false },
+      employeeId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        unique: true,
+        references: { model: 'employees', key: 'id' },
+        comment: 'Set only for Employee-role accounts - links the login to their employee record',
+      },
     },
     {
       tableName: 'users',
@@ -55,6 +63,7 @@ module.exports = (sequelize, DataTypes) => {
 
   User.associate = (models) => {
     User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
+    User.belongsTo(models.Employee, { foreignKey: 'employeeId', as: 'employee' });
     User.hasMany(models.AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
   };
 

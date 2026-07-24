@@ -8,18 +8,38 @@ import {
   ShieldCheck,
   ScrollText,
   Building2,
+  CalendarDays,
+  HandCoins,
+  ClipboardCheck,
+  KeyRound,
+  UserX,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['Administrator', 'HR Officer', 'Finance Officer'] },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['Administrator', 'HR Officer', 'Finance Officer', 'Employee'] },
+
+  // Employee self-service
+  { to: '/my-leave', label: 'My Leave', icon: CalendarDays, roles: ['Employee'] },
+  { to: '/my-advances', label: 'My Salary Advances', icon: HandCoins, roles: ['Employee'] },
+  { to: '/my-payslips', label: 'My Payslips', icon: FileText, roles: ['Employee'] },
+
+  // Staff functions
   { to: '/employees', label: 'Employees', icon: Users, roles: ['Administrator', 'HR Officer'] },
+  { to: '/employees/terminated', label: 'Terminated Employees', icon: UserX, roles: ['Administrator', 'HR Officer'] },
   { to: '/departments', label: 'Departments', icon: Building2, roles: ['Administrator', 'HR Officer'] },
+  { to: '/approvals/leave', label: 'Leave Approvals', icon: ClipboardCheck, roles: ['Administrator', 'HR Officer'] },
+  { to: '/approvals/salary-advances', label: 'Advance Approvals', icon: ClipboardCheck, roles: ['Administrator', 'Finance Officer'] },
   { to: '/payroll', label: 'Payroll', icon: Wallet, roles: ['Administrator', 'Finance Officer'] },
   { to: '/payslips', label: 'Payslips', icon: FileText, roles: ['Administrator', 'Finance Officer', 'HR Officer'] },
   { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['Administrator', 'Finance Officer', 'HR Officer'] },
+
+  // Admin
   { to: '/admin/users', label: 'User Management', icon: ShieldCheck, roles: ['Administrator'] },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['Administrator'] },
+
+  // Everyone
+  { to: '/settings/change-password', label: 'Change Password', icon: KeyRound, roles: ['Administrator', 'HR Officer', 'Finance Officer', 'Employee'] },
 ];
 
 export default function Sidebar() {

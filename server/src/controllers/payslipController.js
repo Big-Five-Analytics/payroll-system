@@ -3,28 +3,55 @@ const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const payslipService = require('../services/payslipService');
 const fs = require('fs');
+const { ROLES } = require('../config/constants');
 
 const generatePayslip = asyncHandler(async (req, res) => {
   const payslip = await payslipService.generatePayslip(req.params.payrollId);
   ApiResponse.send(res, 201, payslip, 'Payslip generated successfully');
 });
 
+// Employees may only ever see their own payslip, and only once the payroll run is paid.
+// Staff roles (Admin/HR/Finance) can see any payslip regardless of pay status.
+const assertCanAccessPayslip = (req, payslip) => {
+  if (req.user.role.name !== ROLES.EMPLOYEE) return;
+
+  if (!req.user.employeeId || payslip.employeeId !== req.user.employeeId) {
+    throw ApiError.forbidden('You can only access your own payslips');
+  }
+  if (payslip.payroll.status !== 'paid') {
+    throw ApiError.forbidden('This payslip is not available yet - it will unlock once payroll has been paid out');
+  }
+};
+
 const getPayslip = asyncHandler(async (req, res) => {
   const payslip = await payslipService.getPayslipById(req.params.id);
+  assertCanAccessPayslip(req, payslip);
   ApiResponse.send(res, 200, payslip, 'Payslip retrieved');
 });
 
 const downloadPayslip = asyncHandler(async (req, res) => {
   const payslip = await payslipService.getPayslipById(req.params.id);
+  assertCanAccessPayslip(req, payslip);
+
   if (!payslip.pdfPath || !fs.existsSync(payslip.pdfPath)) {
     throw ApiError.notFound('Payslip PDF file not found');
   }
   res.download(payslip.pdfPath, `${payslip.payslipNumber}.pdf`);
 });
 
-const listMyPayslips = asyncHandler(async (req, res) => {
+// Staff-facing: look up any employee's payslips (all statuses)
+const listForEmployee = asyncHandler(async (req, res) => {
   const payslips = await payslipService.listPayslipsForEmployee(req.params.employeeId);
   ApiResponse.send(res, 200, payslips, 'Payslips retrieved');
 });
 
-module.exports = { generatePayslip, getPayslip, downloadPayslip, listMyPayslips };
+// Self-service: the logged-in employee's own paid payslips only
+const listMine = asyncHandler(async (req, res) => {
+  if (!req.user.employeeId) {
+    throw ApiError.forbidden('This account is not linked to an employee record');
+  }
+  const payslips = await payslipService.listPaidPayslipsForEmployee(req.user.employeeId);
+  ApiResponse.send(res, 200, payslips, 'Your payslips retrieved');
+});
+
+module.exports = { generatePayslip, getPayslip, downloadPayslip, listForEmployee, listMine };

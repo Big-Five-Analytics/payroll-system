@@ -12,8 +12,12 @@ const { ROLES } = require('../config/constants');
 
 router.use(authenticate);
 
-router.get('/', employeeController.listEmployees);
-router.get('/:id', idParamValidator, validate, employeeController.getEmployee);
+// Full employee directory browsing is a staff function - not exposed to Employee-role
+// self-service accounts (they get their own record via GET /employees/me instead).
+router.get('/without-account', authorize(ROLES.ADMIN), employeeController.listEmployeesWithoutAccount);
+router.get('/terminated', authorize(ROLES.ADMIN, ROLES.HR), employeeController.listTerminatedEmployees);
+router.get('/', authorize(ROLES.ADMIN, ROLES.HR, ROLES.FINANCE), employeeController.listEmployees);
+router.get('/:id', authorize(ROLES.ADMIN, ROLES.HR, ROLES.FINANCE), idParamValidator, validate, employeeController.getEmployee);
 
 router.post(
   '/',

@@ -9,12 +9,8 @@ const registerUserValidator = [
   body('firstName').trim().notEmpty().withMessage('First name is required'),
   body('lastName').trim().notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/\d/)
-    .withMessage('Password must contain at least one number'),
   body('roleId').isUUID().withMessage('A valid role is required'),
+  body('employeeId').optional({ checkFalsy: true }).isUUID().withMessage('Invalid employee reference'),
 ];
 
 const changePasswordValidator = [

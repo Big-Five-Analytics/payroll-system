@@ -9,6 +9,16 @@ const listEmployees = asyncHandler(async (req, res) => {
   ApiResponse.send(res, 200, result, 'Employees retrieved');
 });
 
+const listEmployeesWithoutAccount = asyncHandler(async (req, res) => {
+  const employees = await employeeService.getEmployeesWithoutAccount();
+  ApiResponse.send(res, 200, employees, 'Employees without a user account retrieved');
+});
+
+const listTerminatedEmployees = asyncHandler(async (req, res) => {
+  const result = await employeeService.listTerminatedEmployees(req.query);
+  ApiResponse.send(res, 200, result, 'Terminated employees retrieved');
+});
+
 const getEmployee = asyncHandler(async (req, res) => {
   const employee = await employeeService.getEmployeeById(req.params.id);
   ApiResponse.send(res, 200, employee, 'Employee retrieved');
@@ -44,13 +54,17 @@ const updateEmployee = asyncHandler(async (req, res) => {
 });
 
 const deleteEmployee = asyncHandler(async (req, res) => {
-  const employee = await employeeService.deleteEmployee(req.params.id);
+  const employee = await employeeService.deleteEmployee(req.params.id, {
+    terminatedBy: req.user.id,
+    reason: req.body?.reason,
+  });
 
   await logAudit({
     userId: req.user.id,
     action: AUDIT_ACTIONS.DELETE,
     entityType: 'Employee',
     entityId: employee.id,
+    details: { reason: req.body?.reason },
     ipAddress: req.ip,
   });
 
@@ -71,6 +85,8 @@ const setDeduction = asyncHandler(async (req, res) => {
 
 module.exports = {
   listEmployees,
+  listEmployeesWithoutAccount,
+  listTerminatedEmployees,
   getEmployee,
   createEmployee,
   updateEmployee,

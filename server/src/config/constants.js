@@ -6,6 +6,7 @@ module.exports = {
     ADMIN: 'Administrator',
     HR: 'HR Officer',
     FINANCE: 'Finance Officer',
+    EMPLOYEE: 'Employee',
   },
 
   PAYROLL_STATUS: {
@@ -21,10 +22,17 @@ module.exports = {
     TERMINATED: 'terminated',
   },
 
-  // Zambian statutory rates - configurable via TaxRates table, these are fallback defaults
-  NAPSA_RATE: 0.05,       // 5% employee contribution
-  NAPSA_CEILING: 1451.10, // monthly ceiling (example figure, verify against current NAPSA regs)
-  NHIMA_RATE: 0.01,       // 1% employee contribution
+  REQUEST_STATUS: {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+  },
+
+  LEAVE_TYPES: ['annual', 'sick', 'maternity', 'paternity', 'unpaid', 'compassionate', 'other'],
+
+  // Zambian statutory rates - see server/src/utils/payrollCalculator.js for how these are applied
+  NAPSA_RATE: 0.05, // 5% of gross earnings (basic salary + all allowances)
+  NHIMA_RATE: 0.01, // 1% of basic salary only
 
   AUDIT_ACTIONS: {
     CREATE: 'CREATE',
@@ -33,5 +41,7 @@ module.exports = {
     LOGIN: 'LOGIN',
     LOGOUT: 'LOGOUT',
     PAYROLL_RUN: 'PAYROLL_RUN',
+    APPROVE: 'APPROVE',
+    REJECT: 'REJECT',
   },
 };

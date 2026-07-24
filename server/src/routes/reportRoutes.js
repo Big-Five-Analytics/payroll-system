@@ -10,4 +10,7 @@ router.get('/monthly-summary', reportController.monthlySummary);
 router.get('/employee/:employeeId/history', reportController.employeeHistory);
 router.get('/export/csv', reportController.exportCsv);
 
+// Contains bank account numbers - narrower than the general HR/Finance/Admin access above.
+router.get('/export/bank-file', authorize(ROLES.ADMIN, ROLES.FINANCE), reportController.exportBankFile);
+
 module.exports = router;
