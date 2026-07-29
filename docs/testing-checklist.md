@@ -110,6 +110,24 @@ Import `postman_collection.json` into Postman, then walk through this order (eac
 - [ ] Deleting a department with employees currently assigned returns `400`
 - [ ] Deleting an empty department succeeds and it disappears from the list
 
+## 19. Attendance / Virtual Log Book
+- [ ] With no office networks configured (or all inactive): `POST /attendance/clock-in` returns `403` with a "not configured yet" message
+- [ ] Add an office network covering your test IP (or use the seeded `127.0.0.1`/`::1` for local dev) - clock-in now succeeds
+- [ ] Clock in before 08:00 (or adjust `WORK_START_HOUR` for testing): `lateMinutes` is `0`
+- [ ] Clock in after 08:00: `lateMinutes` reflects the actual delay
+- [ ] Calling `POST /attendance/clock-in` again the same day returns `400`
+- [ ] `POST /attendance/clock-out` before clocking in returns `400`
+- [ ] Clock out after 17:00: `overtimeMinutes` reflects the actual delay; before 17:00 it's `0`
+- [ ] `GET /attendance/today` reflects the day's record correctly, and `null` before any clock-in
+- [ ] `GET /attendance/my` shows only the logged-in account's own history
+- [ ] Logged in as HR: `GET /attendance/summary?month=&year=` aggregates correctly across employees
+- [ ] Logged in as Finance Officer: `GET /attendance` and `GET /attendance/summary` return `403` (not Finance's domain)
+- [ ] From a different, non-allowlisted network: clock-in/out both return `403` naming the detected IP
+
+## 20. Employee Role / Role Dropdown
+- [ ] `GET /users/roles` returns all four roles: Administrator, HR Officer, Finance Officer, Employee
+- [ ] If it doesn't, run `npx sequelize-cli db:seed` from `server/` to pick up any seeders not yet applied
+
 ## Frontend Smoke Test
 - [ ] Log in via the UI with seeded admin credentials
 - [ ] Dashboard loads stats without console errors

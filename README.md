@@ -97,6 +97,18 @@ Finance/Admin can export an `.xlsx` bank payment batch (employee number, name, b
 number, net pay) for any payroll period from the **Reports** page — includes only `approved`/`paid`
 records, and will flag any employee missing bank details before generating the file.
 
+## Attendance (Virtual Log Book)
+
+Any account linked to an employee record can clock in/out from **My Attendance** — standard hours
+are 08:00–17:00. Clock-ins/outs are only accepted from an IP address or CIDR range an Administrator
+has added under **Office Networks**; everything else gets a `403`. HR/Admin review lateness and
+overtime totals from **Attendance** — this is tracking and reporting only, overtime is not
+automatically added to payroll.
+
+**First-time setup:** the system ships with only `127.0.0.1`/`::1` (localhost) in the office
+network allowlist, so clock-in/out will fail for everyone else until an Administrator adds your
+real office IP or CIDR range under **Office Networks**.
+
 ## Documentation
 See `/docs` for:
 - `architecture.md` — system architecture & diagrams

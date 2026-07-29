@@ -18,8 +18,12 @@ import ChangePassword from './pages/settings/ChangePassword';
 import MyLeave from './pages/self-service/MyLeave';
 import MyAdvances from './pages/self-service/MyAdvances';
 import MyPayslips from './pages/self-service/MyPayslips';
+import MyAttendance from './pages/self-service/MyAttendance';
 import LeaveApprovals from './pages/approvals/LeaveApprovals';
 import AdvanceApprovals from './pages/approvals/AdvanceApprovals';
+import AttendanceOverview from './pages/attendance/AttendanceOverview';
+import OfficeNetworks from './pages/admin/OfficeNetworks';
+import GeneralWorkers from './pages/general-workers/GeneralWorkers';
 
 const STAFF_ROLES = ['Administrator', 'HR Officer', 'Finance Officer'];
 
@@ -36,11 +40,12 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/settings/change-password" element={<ChangePassword />} />
 
-              {/* Employee self-service */}
-              <Route element={<ProtectedRoute roles={['Employee']} />}>
+              {/* Self-service - any account linked to an employee record, not just the Employee role */}
+              <Route element={<ProtectedRoute requireEmployeeLink />}>
                 <Route path="/my-leave" element={<MyLeave />} />
                 <Route path="/my-advances" element={<MyAdvances />} />
                 <Route path="/my-payslips" element={<MyPayslips />} />
+                <Route path="/my-attendance" element={<MyAttendance />} />
               </Route>
 
               {/* Staff-only */}
@@ -53,7 +58,9 @@ export default function App() {
                 <Route path="/employees" element={<Employees />} />
                 <Route path="/departments" element={<Departments />} />
                 <Route path="/employees/terminated" element={<TerminatedEmployees />} />
+                <Route path="/general-workers" element={<GeneralWorkers />} />
                 <Route path="/approvals/leave" element={<LeaveApprovals />} />
+                <Route path="/attendance" element={<AttendanceOverview />} />
               </Route>
 
               <Route element={<ProtectedRoute roles={['Administrator', 'Finance Officer']} />}>
@@ -64,6 +71,7 @@ export default function App() {
               <Route element={<ProtectedRoute roles={['Administrator']} />}>
                 <Route path="/admin/users" element={<Users />} />
                 <Route path="/admin/audit-logs" element={<AuditLogs />} />
+                <Route path="/admin/office-networks" element={<OfficeNetworks />} />
               </Route>
             </Route>
           </Route>

@@ -11,6 +11,15 @@ const logger = require('./config/logger');
 
 const app = express();
 
+// Only enable if this API actually sits behind a reverse proxy/load balancer (Nginx,
+// Heroku, a cloud LB, etc). It makes Express trust the X-Forwarded-For header for
+// req.ip - which the attendance office-network check depends on. Leaving this on
+// without an actual trusted proxy in front lets clients spoof their IP via that header,
+// so it's opt-in via env rather than always-on.
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', true);
+}
+
 app.use(helmet());
 app.use(
   cors({

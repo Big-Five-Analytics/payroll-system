@@ -30,6 +30,28 @@ module.exports = {
 
   LEAVE_TYPES: ['annual', 'sick', 'maternity', 'paternity', 'unpaid', 'compassionate', 'other'],
 
+  // Standard work hours for the attendance log book - clock-ins after WORK_START and
+  // clock-outs after WORK_END are flagged as late / overtime respectively. Computed
+  // against the server's local time, so the server should run in Africa/Lusaka (or the
+  // deployment should otherwise account for timezone) for these to be meaningful.
+  WORK_START_HOUR: 8,  // 08:00
+  WORK_END_HOUR: 17,   // 17:00
+
+  ATTENDANCE_ACTIONS: {
+    CLOCK_IN: 'CLOCK_IN',
+    CLOCK_OUT: 'CLOCK_OUT',
+  },
+
+  GENERAL_WORKER_STATUS: {
+    ACTIVE: 'active',
+    INACTIVE: 'inactive',
+  },
+
+  PAY_RATE_TYPE: {
+    DAILY: 'daily',
+    MONTHLY: 'monthly',
+  },
+
   // Zambian statutory rates - see server/src/utils/payrollCalculator.js for how these are applied
   NAPSA_RATE: 0.05, // 5% of gross earnings (basic salary + all allowances)
   NHIMA_RATE: 0.01, // 1% of basic salary only
@@ -43,5 +65,8 @@ module.exports = {
     PAYROLL_RUN: 'PAYROLL_RUN',
     APPROVE: 'APPROVE',
     REJECT: 'REJECT',
+    CLOCK_IN: 'CLOCK_IN',
+    CLOCK_OUT: 'CLOCK_OUT',
+    BULK_UPLOAD: 'BULK_UPLOAD',
   },
 };

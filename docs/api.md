@@ -163,6 +163,48 @@ has been deducted yet.
 
 **Errors:** `400` — application already reviewed · `403` — account not linked to an employee record, or reviewing your own application
 
+## Attendance (Virtual Log Book)
+
+| Method | URL | Purpose | Roles |
+|---|---|---|---|
+| POST | `/attendance/clock-in` | Clock in for today | Any account with a linked employee record |
+| POST | `/attendance/clock-out` | Clock out for today | Any account with a linked employee record |
+| GET | `/attendance/today` | Today's clock-in/out status for the current account (or `null` if not clocked in yet) | Any account with a linked employee record |
+| GET | `/attendance/my?month=&year=` | Own attendance history | Any account with a linked employee record |
+| GET | `/attendance?employeeId=&departmentId=&from=&to=&page=&limit=` | Raw log across all employees | Admin, HR |
+| GET | `/attendance/summary?month=&year=` | Per-employee totals for a period (days logged, days late, total late minutes, total overtime minutes) | Admin, HR |
+
+**Every clock-in/out requires the request to originate from an active [Office Network](#office-networks-administration) IP/CIDR range — `403` otherwise, with a message naming the detected IP.**
+
+Standard hours are 08:00–17:00 (server local time, configurable via `WORK_START_HOUR`/`WORK_END_HOUR`
+in `config/constants.js`). One record per employee per calendar day:
+- `POST /attendance/clock-in` creates the day's record; calling it again the same day returns `400`.
+- `POST /attendance/clock-out` fills in the existing record; requires a prior clock-in that day, and can't be called twice.
+- `lateMinutes` / `overtimeMinutes` are computed and stored at the moment of the action (not recalculated later), so changing the work-hours config doesn't retroactively alter historical records.
+
+This is tracking/reporting only — overtime is **not** automatically added to payroll. HR reviews the summary and decides manually.
+
+**Errors:** `400` — already clocked in/out today, or clocking out without clocking in · `403` — not on an office network, or account not linked to an employee record
+
+## Office Networks (Administration)
+
+| Method | URL | Purpose | Roles |
+|---|---|---|---|
+| GET | `/office-networks` | List configured IP/CIDR ranges | Admin |
+| POST | `/office-networks` | Add a range `{ label, ipRange, isActive? }` | Admin |
+| PUT | `/office-networks/:id` | Update a range | Admin |
+| DELETE | `/office-networks/:id` | Remove a range | Admin |
+
+`ipRange` accepts a single IP (`41.63.12.4`) or a CIDR block (`41.63.12.0/24`). If **no active**
+range exists, every clock-in/out is rejected with a clear "not configured yet" message rather than
+silently allowing everyone through. Seeded by default with `127.0.0.1` and `::1` for local
+development — replace these with your real office IP/CIDR before deploying.
+
+If the API runs behind a reverse proxy/load balancer, set `TRUST_PROXY=true` in `.env` so Express
+reads the real client IP from `X-Forwarded-For` instead of the proxy's own IP — otherwise every
+request will appear to come from the proxy and the office-network check will misbehave. Only enable
+this if you actually have a trusted proxy in front; otherwise it lets clients spoof their IP.
+
 ## Audit Logs
 
 | Method | URL | Purpose | Roles |

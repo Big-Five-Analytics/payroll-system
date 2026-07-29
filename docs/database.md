@@ -18,6 +18,7 @@ erDiagram
     EMPLOYEES ||--o{ LEAVE_APPLICATIONS : submits
     EMPLOYEES ||--o{ SALARY_ADVANCE_APPLICATIONS : submits
     EMPLOYEES ||--o| TERMINATED_EMPLOYEES : "archived on termination"
+    EMPLOYEES ||--o{ ATTENDANCE_LOGS : "clocks in/out"
     ALLOWANCES ||--o{ EMPLOYEE_ALLOWANCES : "assigned via"
     DEDUCTIONS ||--o{ EMPLOYEE_DEDUCTIONS : "assigned via"
     PAYROLLS ||--o{ PAYROLL_ITEMS : contains
@@ -138,6 +139,23 @@ erDiagram
         string reason
         uuid terminatedBy FK
     }
+    ATTENDANCE_LOGS {
+        uuid id PK
+        uuid employeeId FK
+        date logDate
+        datetime clockInAt
+        string clockInIp
+        int lateMinutes
+        datetime clockOutAt
+        string clockOutIp
+        int overtimeMinutes
+    }
+    OFFICE_NETWORKS {
+        uuid id PK
+        string label
+        string ipRange "single IP or CIDR block"
+        boolean isActive
+    }
     AUDIT_LOGS {
         uuid id PK
         uuid userId FK
@@ -158,6 +176,8 @@ erDiagram
 - **Users ↔ Employees is a nullable one-to-one, open to any role.** Any staff account (Admin/HR/Finance) can optionally link `employeeId` too — not just the `Employee` role — since HR/Finance/Admin staff are frequently employees of the company as well. Only the `Employee` role *requires* the link (an Employee-role account with no linked record couldn't do anything). The unique constraint on `users.employeeId` guarantees at most one login per employee — the API enforces this at creation time, not just the DB.
 - **LeaveApplication/SalaryAdvanceApplication** intentionally mirror the same shape (`status`, `reviewedBy`, `reviewedAt`, `reviewComment`) even though they're reviewed by different roles (HR vs Finance) — kept as separate tables rather than one polymorphic "request" table because their domain-specific fields (`leaveType`/date range vs `amountRequested`) differ enough that a shared table would need a lot of nullable columns. `SalaryAdvanceApplication` additionally tracks `recovered`/`recoveredInPayrollId` so the payroll engine can automatically apply it exactly once as a payroll deduction.
 - **TerminatedEmployee is an archive, not a replacement for the employees row.** Terminating an employee writes a snapshot here (for HR record-keeping) and flips `employees.status` to `terminated` - it does **not** delete the `employees` row. That row is still the foreign-key target for the employee's historical `Payroll`, `Payslip`, `LeaveApplication`, and `SalaryAdvanceApplication` records; deleting it would either be rejected (FK constraint) or cascade-delete years of payroll history, neither of which is acceptable for a payroll system. "Removed from the active list" is enforced at the query level instead - default employee listings and the dashboard headcount both filter out `status = 'terminated'`.
+- **AttendanceLog is one row per employee per day**, not one row per clock action. Clock-in creates it, clock-out fills in the rest - this makes "did they clock out?" a single nullable-column check (`clockOutAt IS NULL`) instead of needing to pair up rows from an event-log table. `lateMinutes`/`overtimeMinutes` are computed once and stored (not derived on read), so a later change to the standard work-hours config doesn't rewrite history.
+- **OfficeNetwork is deliberately a table, not an env var.** IP allowlisting needs to be editable by an Administrator without a redeploy (offices move, IPs change, a company might add a second location or a VPN range) - `isActive` lets an entry be disabled without losing the record of what it was.
 
 ## Statutory Calculations (ZRA method)
 
