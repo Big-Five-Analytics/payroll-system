@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Users, Building2, Wallet, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { getDashboardStats } from '../../services/dashboardService';
+import { getUsers } from '../../services/userService';
+import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/ui/Card';
 import Loader from '../../components/ui/Loader';
 import toast from 'react-hot-toast';
@@ -21,6 +23,7 @@ const StatCard = ({ icon: Icon, label, value, accent }) => (
 );
 
 export default function Dashboard() {
+  const { hasRole } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +32,16 @@ export default function Dashboard() {
       .then(({ data }) => setStats(data.data))
       .catch(() => toast.error('Failed to load dashboard stats'))
       .finally(() => setLoading(false));
+  }, []);
+
+  // GET /api/users is Admin-only - only fetch here for Administrators, since this
+  // Dashboard is also the landing page for every other role.
+  useEffect(() => {
+    if (!hasRole('Administrator')) return;
+    getUsers()
+      .then(({ data }) => console.log(data.data))
+      .catch((error) => console.error('Error fetching users:', error));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <Loader label="Loading dashboard..." />;
