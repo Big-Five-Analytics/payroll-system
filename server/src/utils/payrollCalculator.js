@@ -1,4 +1,4 @@
-const { NAPSA_RATE, NHIMA_RATE } = require('../config/constants');
+const { NAPSA_RATE, NAPSA_CEILING, NHIMA_RATE } = require('../config/constants');
 
 /**
  * Compute PAYE tax using progressive tax bands (ZRA method).
@@ -20,12 +20,10 @@ function calculatePAYE(taxableIncome, bands) {
   return round2(tax);
 }
 
-// NAPSA: 5% of GROSS earnings (basic salary + all allowances).
-// Real-world NAPSA also applies a statutory ceiling on pensionable earnings - not modeled
-// here since it wasn't part of the specified calculation method. Re-introduce a cap in
-// this function if your organization's NAPSA registration requires one.
+// NAPSA: 5% of GROSS earnings (basic salary + all allowances), capped at the statutory
+// pensionable-earnings ceiling (NAPSA_CEILING) - contributions above the ceiling aren't charged.
 function calculateNAPSA(grossPay) {
-  return round2(grossPay * NAPSA_RATE);
+  return round2(Math.min(grossPay, NAPSA_CEILING) * NAPSA_RATE);
 }
 
 // NHIMA: 1% of BASIC salary only (not gross pay - allowances are excluded from this one).

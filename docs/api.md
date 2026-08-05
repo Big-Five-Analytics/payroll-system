@@ -69,9 +69,9 @@ leave/advance/payslip self-service endpoints below.
 **Calculation method (ZRA):**
 ```
 grossPay      = basicSalary + all allowances
-NAPSA         = 5% of grossPay
+NAPSA         = 5% of grossPay, capped at the statutory ceiling
 NHIMA         = 1% of basicSalary
-taxableIncome = grossPay - NAPSA - NHIMA
+taxableIncome = grossPay - NAPSA   (NAPSA is tax-deductible; NHIMA is not, per ZRA rules)
 PAYE          = progressive tax on taxableIncome, per the active tax_rates bands
 netPay        = grossPay - PAYE - NAPSA - NHIMA - other deductions - salary advance recovery
 ```

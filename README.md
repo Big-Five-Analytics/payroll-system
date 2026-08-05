@@ -76,10 +76,10 @@ the user. After first login, they see a reminder banner prompting them to change
 
 ```
 grossPay      = basicSalary + all allowances
-NAPSA         = 5% of grossPay
+NAPSA         = 5% of grossPay, capped at the statutory ceiling
 NHIMA         = 1% of basicSalary
-taxableIncome = grossPay - NAPSA - NHIMA
-PAYE          = progressive tax on taxableIncome (0% to K5,100 / 25% to K9,200 / 30% to K18,000 / 37% above)
+taxableIncome = grossPay - NAPSA   (NAPSA is tax-deductible; NHIMA is not, per ZRA rules)
+PAYE          = progressive tax on taxableIncome (0% to K5,100 / 20% to K7,100 / 30% to K9,200 / 37% above)
 ```
 Approved salary advances are automatically deducted in full on the employee's next payroll run —
 no manual deduction setup needed. See `docs/database.md` for the full breakdown.

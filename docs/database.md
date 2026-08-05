@@ -183,14 +183,14 @@ erDiagram
 
 ```
 grossPay      = basicSalary + all allowances
-NAPSA         = 5% of grossPay
+NAPSA         = 5% of grossPay, capped at the statutory ceiling
 NHIMA         = 1% of basicSalary
-taxableIncome = grossPay - NAPSA - NHIMA
+taxableIncome = grossPay - NAPSA   (NAPSA is tax-deductible; NHIMA is not, per ZRA rules)
 PAYE          = progressive tax on taxableIncome, per the active tax_rates bands
 ```
 
-- **NAPSA**: 5% of gross earnings (basic + all allowances). No statutory ceiling is currently modeled - real NAPSA registration does apply one to pensionable earnings; add it back in `payrollCalculator.js` if your organization needs it.
-- **NHIMA**: 1% of basic salary only (allowances are excluded from this one).
-- **PAYE**: progressive bands stored in `tax_rates`, seeded with the 2025 ZRA bands: 0% to K5,100, 25% to K9,200, 30% to K18,000, 37% above.
+- **NAPSA**: 5% of gross earnings (basic + all allowances), capped at the statutory pensionable-earnings ceiling (`NAPSA_CEILING` in `constants.js` — currently K37,236/month, capping the employee contribution at K1,861.80). NAPSA revises this ceiling annually; update the constant when they issue a new notice.
+- **NHIMA**: 1% of basic salary only (allowances are excluded from this one). NHIMA contributions do **not** reduce taxable income for PAYE purposes.
+- **PAYE**: progressive bands stored in `tax_rates`, seeded with the corrected ZRA bands (effective 2026-01-01): 0% to K5,100, 20% to K7,100, 30% to K9,200, 37% above.
 
-> Verify current ZRA/NAPSA/NHIMA rates periodically — these change with government budget cycles — and update the `tax_rates` table (or seed data) accordingly. If you've already run the original seeders against a live database, re-seed `tax_rates` to pick up the corrected bands: `npx sequelize-cli db:seed:undo --seed 20250101100004-seed-tax-rates.js && npx sequelize-cli db:seed --seed 20250101100004-seed-tax-rates.js`.
+> Verify current ZRA/NAPSA/NHIMA rates periodically — these change with government budget cycles — and update the `tax_rates` table (or seed data) accordingly. The `20260101100001-fix-paye-tax-bands-2026.js` seeder deactivates the earlier (mismatched) 2025 bands and inserts the corrected ones as a new versioned entry, so historical payroll runs stay attributable to the bands that were actually active when they ran.
