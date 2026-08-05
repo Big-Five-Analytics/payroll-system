@@ -24,6 +24,7 @@ import AdvanceApprovals from './pages/approvals/AdvanceApprovals';
 import AttendanceOverview from './pages/attendance/AttendanceOverview';
 import OfficeNetworks from './pages/admin/OfficeNetworks';
 import GeneralWorkers from './pages/general-workers/GeneralWorkers';
+import Notifications from './pages/notifications/Notifications';
 
 const STAFF_ROLES = ['Administrator', 'HR Officer', 'Finance Officer'];
 
@@ -38,6 +39,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings/change-password" element={<ChangePassword />} />
 
               {/* Self-service - any account linked to an employee record, not just the Employee role */}

@@ -96,6 +96,8 @@ const getPayslipById = async (id) => {
   return payslip;
 };
 
+const getPayslipByPayrollId = (payrollId) => Payslip.findOne({ where: { payrollId } });
+
 const listPayslipsForEmployee = (employeeId) =>
   Payslip.findAll({
     where: { employeeId },
@@ -115,6 +117,7 @@ const listPaidPayslipsForEmployee = (employeeId) =>
 module.exports = {
   generatePayslip,
   getPayslipById,
+  getPayslipByPayrollId,
   listPayslipsForEmployee,
   listPaidPayslipsForEmployee,
   PAYSLIP_DIR,

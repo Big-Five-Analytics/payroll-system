@@ -2,11 +2,34 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const payslipService = require('../services/payslipService');
+const payrollService = require('../services/payrollService');
+const notificationService = require('../services/notificationService');
 const fs = require('fs');
-const { ROLES } = require('../config/constants');
+const { ROLES, NOTIFICATION_TYPES } = require('../config/constants');
 
+// generatePayslip is idempotent (returns the existing payslip on repeat calls), so we
+// check existence beforehand to only notify the first time it's actually created -
+// and only once the payroll is paid, since that's the point it becomes visible to the
+// employee (see assertCanAccessPayslip below). If it's generated before payout, the
+// notification instead fires later from payrollController.markPaid.
 const generatePayslip = asyncHandler(async (req, res) => {
+  const alreadyExisted = await payslipService.getPayslipByPayrollId(req.params.payrollId);
   const payslip = await payslipService.generatePayslip(req.params.payrollId);
+
+  if (!alreadyExisted) {
+    const payroll = await payrollService.getPayrollById(req.params.payrollId);
+    if (payroll.status === 'paid') {
+      await notificationService.notifyEmployeeUser(payslip.employeeId, {
+        type: NOTIFICATION_TYPES.PAYSLIP_READY,
+        title: 'Payslip available',
+        message: `Your payslip for ${payroll.payPeriodMonth}/${payroll.payPeriodYear} is now available.`,
+        link: '/my-payslips',
+        entityType: 'Payslip',
+        entityId: payslip.id,
+      });
+    }
+  }
+
   ApiResponse.send(res, 201, payslip, 'Payslip generated successfully');
 });
 

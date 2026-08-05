@@ -2,8 +2,9 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const salaryAdvanceService = require('../services/salaryAdvanceService');
+const notificationService = require('../services/notificationService');
 const { logAudit } = require('../middleware/auditLogger');
-const { AUDIT_ACTIONS } = require('../config/constants');
+const { AUDIT_ACTIONS, NOTIFICATION_TYPES } = require('../config/constants');
 
 const requireEmployeeSelf = (req) => {
   if (!req.user.employeeId) {
@@ -47,6 +48,15 @@ const review = asyncHandler(async (req, res) => {
     entityType: 'SalaryAdvanceApplication',
     entityId: application.id,
     ipAddress: req.ip,
+  });
+
+  await notificationService.notifyEmployeeUser(application.employeeId, {
+    type: NOTIFICATION_TYPES.SALARY_ADVANCE_STATUS,
+    title: `Salary advance ${application.status}`,
+    message: `Your salary advance request for ZMW ${Number(application.amountRequested).toFixed(2)} was ${application.status}.`,
+    link: '/my-advances',
+    entityType: 'SalaryAdvanceApplication',
+    entityId: application.id,
   });
 
   ApiResponse.send(res, 200, application, `Salary advance application ${req.body.status}`);

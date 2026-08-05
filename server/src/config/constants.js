@@ -53,6 +53,12 @@ module.exports = {
     MONTHLY: 'monthly',
   },
 
+  NOTIFICATION_TYPES: {
+    LEAVE_STATUS: 'leave_status',
+    SALARY_ADVANCE_STATUS: 'salary_advance_status',
+    PAYSLIP_READY: 'payslip_ready',
+  },
+
   // Zambian statutory rates - see server/src/utils/payrollCalculator.js for how these are applied
   NAPSA_RATE: 0.05, // 5% of gross earnings (basic salary + all allowances)
   NHIMA_RATE: 0.01, // 1% of basic salary only

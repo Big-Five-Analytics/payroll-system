@@ -15,5 +15,6 @@ router.use('/salary-advances', require('./salaryAdvanceRoutes'));
 router.use('/attendance', require('./attendanceRoutes'));
 router.use('/office-networks', require('./officeNetworkRoutes'));
 router.use('/general-workers', require('./generalWorkerRoutes'));
+router.use('/notifications', require('./notificationRoutes'));
 
 module.exports = router;

@@ -2,8 +2,9 @@ const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/ApiResponse');
 const ApiError = require('../utils/ApiError');
 const leaveService = require('../services/leaveService');
+const notificationService = require('../services/notificationService');
 const { logAudit } = require('../middleware/auditLogger');
-const { AUDIT_ACTIONS } = require('../config/constants');
+const { AUDIT_ACTIONS, NOTIFICATION_TYPES } = require('../config/constants');
 
 const requireEmployeeSelf = (req) => {
   if (!req.user.employeeId) {
@@ -47,6 +48,15 @@ const review = asyncHandler(async (req, res) => {
     entityType: 'LeaveApplication',
     entityId: application.id,
     ipAddress: req.ip,
+  });
+
+  await notificationService.notifyEmployeeUser(application.employeeId, {
+    type: NOTIFICATION_TYPES.LEAVE_STATUS,
+    title: `Leave application ${application.status}`,
+    message: `Your ${application.leaveType} leave request (${application.startDate} to ${application.endDate}) was ${application.status}.`,
+    link: '/my-leave',
+    entityType: 'LeaveApplication',
+    entityId: application.id,
   });
 
   ApiResponse.send(res, 200, application, `Leave application ${req.body.status}`);

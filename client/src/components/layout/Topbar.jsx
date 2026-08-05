@@ -1,6 +1,7 @@
 import { LogOut, Menu, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 export default function Topbar({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -24,6 +25,7 @@ export default function Topbar({ onMenuClick }) {
         <span className="font-semibold text-gray-800 md:hidden">Big Five</span>
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
+        <NotificationBell />
         <div className="flex items-center gap-2 text-sm">
           <div className="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
             <User size={16} />
