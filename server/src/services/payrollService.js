@@ -19,9 +19,9 @@ const { calculatePAYE, calculateNAPSA, calculateNHIMA, round2 } = require('../ut
  * Core payroll engine. For each active employee (or a given subset), computes pay
  * using the ZRA method:
  *   grossPay      = basicSalary + all allowances
- *   NAPSA         = 5% of grossPay
+ *   NAPSA         = 5% of grossPay, capped at the statutory ceiling
  *   NHIMA         = 1% of basicSalary
- *   taxableIncome = grossPay - NAPSA - NHIMA
+ *   taxableIncome = grossPay - NAPSA   (NAPSA is tax-deductible; NHIMA is not, per ZRA rules)
  *   PAYE          = progressive tax on taxableIncome
  *   netPay        = grossPay - PAYE - NAPSA - NHIMA - other deductions - salary advance recovery
  *
@@ -94,7 +94,7 @@ const generatePayroll = async ({ month, year, employeeIds, processedBy }) => {
       const grossPay = round2(basicSalary + totalAllowances);
       const napsaContribution = calculateNAPSA(grossPay);
       const nhimaContribution = calculateNHIMA(basicSalary);
-      const taxableIncome = round2(grossPay - napsaContribution - nhimaContribution);
+      const taxableIncome = round2(grossPay - napsaContribution);
       const payeTax = calculatePAYE(taxableIncome, activeBands);
 
       const totalDeductions = round2(
@@ -134,7 +134,7 @@ const generatePayroll = async ({ month, year, employeeIds, processedBy }) => {
         items.push({
           payrollId: payroll.id,
           type: 'deduction',
-          label: 'Salary Advance Recovery',
+          label: 'Salary Advance',
           amount: advanceRecovery,
         });
       }

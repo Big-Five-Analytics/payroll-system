@@ -30,3 +30,7 @@ Thumbs.db
 
 # Database
 *.sqlite
+
+# Generated payslip PDFs contain employee PII and are runtime output, not source
+server/storage/payslips/*
+!server/storage/payslips/.gitkeep
