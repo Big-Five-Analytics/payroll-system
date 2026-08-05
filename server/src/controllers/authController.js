@@ -6,6 +6,7 @@ const { AUDIT_ACTIONS } = require('../config/constants');
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  console.log('LOGIN ATTEMPT RECEIVED FOR:', email);
   const { user, accessToken, refreshToken } = await authService.login(email, password);
 
   res.cookie('refreshToken', refreshToken, {
