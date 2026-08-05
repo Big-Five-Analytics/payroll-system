@@ -83,15 +83,22 @@ const uploadPreview = asyncHandler(async (req, res) => {
 });
 
 const uploadCommit = asyncHandler(async (req, res) => {
-  const { site, mapping, rows, fileName } = req.body;
-  const result = await generalWorkerService.importWorkers({ site, mapping, rows, sourceFileName: fileName });
+  const { site, mapping, rows, fileName, wageBillMonth, wageBillYear } = req.body;
+  const result = await generalWorkerService.importWorkers({
+    site,
+    mapping,
+    rows,
+    sourceFileName: fileName,
+    wageBillMonth,
+    wageBillYear,
+  });
 
   await logAudit({
     userId: req.user.id,
     action: AUDIT_ACTIONS.BULK_UPLOAD,
     entityType: 'GeneralWorker',
     entityId: null,
-    details: { site, fileName, ...result, errorCount: result.errors.length },
+    details: { site, fileName, wageBillMonth, wageBillYear, ...result, errorCount: result.errors.length },
     ipAddress: req.ip,
   });
 

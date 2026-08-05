@@ -9,14 +9,9 @@ module.exports = (sequelize, DataTypes) => {
       },
       fullName: { type: DataTypes.STRING(150), allowNull: false },
       site: { type: DataTypes.STRING(100), allowNull: false },
-      nationalId: { type: DataTypes.STRING(30), allowNull: true, unique: true },
-      workerNumber: { type: DataTypes.STRING(30), allowNull: true },
-      jobTitle: { type: DataTypes.STRING(100), allowNull: true },
+      jobTitle: { type: DataTypes.STRING(100), allowNull: true }, // Trade/Role in the wage-bill sheets
       payRate: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
-      payRateType: { type: DataTypes.ENUM('daily', 'monthly'), allowNull: true },
-      phone: { type: DataTypes.STRING(20), allowNull: true },
-      nextOfKinName: { type: DataTypes.STRING(150), allowNull: true },
-      nextOfKinPhone: { type: DataTypes.STRING(20), allowNull: true },
+      payRateType: { type: DataTypes.ENUM('hourly', 'daily', 'monthly'), allowNull: true },
       contractStartDate: { type: DataTypes.DATEONLY, allowNull: true },
       contractEndDate: { type: DataTypes.DATEONLY, allowNull: true },
       leaveBalance: {
@@ -30,6 +25,29 @@ module.exports = (sequelize, DataTypes) => {
       },
       sourceFileName: { type: DataTypes.STRING(255), allowNull: true },
       lastUploadedAt: { type: DataTypes.DATE, allowNull: true },
+
+      // Monthly wage-bill snapshot (e.g. MFEZ-style casual/hourly wage sheets) - flat
+      // columns holding the most recently uploaded/edited month's figures only, tagged
+      // with wageBillMonth/Year. Re-importing a new month's bill overwrites these.
+      daysWorkedWeekday: { type: DataTypes.INTEGER, allowNull: true },
+      daysWorkedSaturday: { type: DataTypes.INTEGER, allowNull: true },
+      daysWorkedSundayPH: { type: DataTypes.INTEGER, allowNull: true },
+      normalHoursWeekday: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      normalHoursSaturday: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      totalNormalHours: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      basicPay: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      otHoursWeekday: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      otPayWeekday: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      otHoursSaturday: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      otPaySaturday: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      otHoursSundayPH: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      otPaySundayPH: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      monthlyNormalHoursTarget: { type: DataTypes.DECIMAL(6, 2), allowNull: true },
+      housingAllowance: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      transportAllowance: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      totalPay: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
+      wageBillMonth: { type: DataTypes.INTEGER, allowNull: true, validate: { min: 1, max: 12 } },
+      wageBillYear: { type: DataTypes.INTEGER, allowNull: true },
     },
     {
       tableName: 'general_workers',
@@ -37,7 +55,6 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         { fields: ['site'] },
         { fields: ['contractEndDate'] },
-        { unique: true, fields: ['site', 'workerNumber'], name: 'general_workers_site_worker_number_unique' },
       ],
     }
   );

@@ -43,6 +43,30 @@ function ContractEndCell({ date }) {
   return <span className="text-gray-600">{date}</span>;
 }
 
+const num = (value, decimals = 2) =>
+  value === null || value === undefined || value === '' ? '-' : Number(value).toFixed(decimals);
+
+const WAGE_BILL_COLUMNS = [
+  { key: 'payRate', label: 'Hourly Rate', render: (w) => num(w.payRate) },
+  { key: 'daysWorkedWeekday', label: 'Days Worked (Mon-Fri)', render: (w) => num(w.daysWorkedWeekday, 0) },
+  { key: 'daysWorkedSaturday', label: 'Saturdays Worked', render: (w) => num(w.daysWorkedSaturday, 0) },
+  { key: 'daysWorkedSundayPH', label: 'Sundays/PH Worked', render: (w) => num(w.daysWorkedSundayPH, 0) },
+  { key: 'normalHoursWeekday', label: 'Normal Hours (Mon-Fri)', render: (w) => num(w.normalHoursWeekday) },
+  { key: 'normalHoursSaturday', label: 'Normal Hours (Sat)', render: (w) => num(w.normalHoursSaturday) },
+  { key: 'totalNormalHours', label: 'Total Normal Hours', render: (w) => num(w.totalNormalHours) },
+  { key: 'basicPay', label: 'Basic Pay', render: (w) => num(w.basicPay) },
+  { key: 'otHoursWeekday', label: 'OT Hours (Weekdays)', render: (w) => num(w.otHoursWeekday) },
+  { key: 'otPayWeekday', label: 'OT Pay', render: (w) => num(w.otPayWeekday) },
+  { key: 'otHoursSaturday', label: 'OT Hours (Sat)', render: (w) => num(w.otHoursSaturday) },
+  { key: 'otPaySaturday', label: 'OT Pay (1.5x)', render: (w) => num(w.otPaySaturday) },
+  { key: 'otHoursSundayPH', label: 'OT Hours (Sunday/PH)', render: (w) => num(w.otHoursSundayPH) },
+  { key: 'otPaySundayPH', label: 'OT Pay (2.0x)', render: (w) => num(w.otPaySundayPH) },
+  { key: 'monthlyNormalHoursTarget', label: 'Monthly Total Normal Hours', render: (w) => num(w.monthlyNormalHoursTarget) },
+  { key: 'housingAllowance', label: 'Housing Allowance', render: (w) => num(w.housingAllowance) },
+  { key: 'transportAllowance', label: 'Transport', render: (w) => num(w.transportAllowance) },
+  { key: 'totalPay', label: 'Total Pay', render: (w) => num(w.totalPay) },
+];
+
 export default function GeneralWorkers() {
   const [workers, setWorkers] = useState([]);
   const [sites, setSites] = useState([]);
@@ -101,7 +125,8 @@ export default function GeneralWorkers() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">General Workers</h1>
           <p className="text-sm text-gray-500">
-            Casual/general staff tracked across sites - no system login, contract and leave-balance monitoring only
+            Casual/general staff tracked across sites - no system login. Monthly wage bill, contract expiry, and
+            leave balance in one place.
           </p>
         </div>
         <div className="flex gap-2">
@@ -120,7 +145,7 @@ export default function GeneralWorkers() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <Input
               className="pl-9"
-              placeholder="Search by name, NRC, or worker no."
+              placeholder="Search by name"
               value={search}
               onChange={(e) => { setPage(1); setSearch(e.target.value); }}
             />
@@ -151,27 +176,33 @@ export default function GeneralWorkers() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b border-gray-200">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Site</th>
-                  <th className="py-2 pr-4 font-medium">Job Title</th>
-                  <th className="py-2 pr-4 font-medium">Contract End</th>
-                  <th className="py-2 pr-4 font-medium">Leave Balance</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 font-medium text-right">Actions</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap sticky left-0 bg-white">Name</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Trade / Role</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Site</th>
+                  {WAGE_BILL_COLUMNS.map((col) => (
+                    <th key={col.key} className="py-2 pr-3 font-medium whitespace-nowrap">{col.label}</th>
+                  ))}
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Contract End</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Leave Balance</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap">Status</th>
+                  <th className="py-2 pr-3 font-medium whitespace-nowrap text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {workers.map((w) => (
                   <tr key={w.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 pr-4 font-medium text-gray-900">{w.fullName}</td>
-                    <td className="py-3 pr-4 text-gray-600">{w.site}</td>
-                    <td className="py-3 pr-4 text-gray-600">{w.jobTitle || '-'}</td>
-                    <td className="py-3 pr-4"><ContractEndCell date={w.contractEndDate} /></td>
-                    <td className={clsx('py-3 pr-4', Number(w.leaveBalance) <= 0 ? 'text-red-600' : 'text-gray-600')}>
+                    <td className="py-3 pr-3 font-medium text-gray-900 whitespace-nowrap sticky left-0 bg-white">{w.fullName}</td>
+                    <td className="py-3 pr-3 text-gray-600 whitespace-nowrap">{w.jobTitle || '-'}</td>
+                    <td className="py-3 pr-3 text-gray-600 whitespace-nowrap">{w.site}</td>
+                    {WAGE_BILL_COLUMNS.map((col) => (
+                      <td key={col.key} className="py-3 pr-3 text-gray-600 whitespace-nowrap">{col.render(w)}</td>
+                    ))}
+                    <td className="py-3 pr-3 whitespace-nowrap"><ContractEndCell date={w.contractEndDate} /></td>
+                    <td className={clsx('py-3 pr-3 whitespace-nowrap', Number(w.leaveBalance) <= 0 ? 'text-red-600' : 'text-gray-600')}>
                       {Number(w.leaveBalance)} days
                     </td>
-                    <td className="py-3 pr-4"><Badge status={w.status} /></td>
-                    <td className="py-3 pr-4 text-right">
+                    <td className="py-3 pr-3 whitespace-nowrap"><Badge status={w.status} /></td>
+                    <td className="py-3 pr-3 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => { setEditing(w); setFormOpen(true); }}

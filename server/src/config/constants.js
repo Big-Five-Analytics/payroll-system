@@ -48,6 +48,7 @@ module.exports = {
   },
 
   PAY_RATE_TYPE: {
+    HOURLY: 'hourly',
     DAILY: 'daily',
     MONTHLY: 'monthly',
   },

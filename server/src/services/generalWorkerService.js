@@ -3,32 +3,71 @@ const ExcelJS = require('exceljs');
 const { sequelize, GeneralWorker } = require('../models');
 const ApiError = require('../utils/ApiError');
 
-// Header text -> system field, matched case-insensitively against trimmed header cells.
-// Sites don't share a spreadsheet template, so uploads go through a mapping step -
-// this table just seeds a best-guess default mapping the HR user can correct.
+// Header text -> system field, matched as a substring against a normalized header
+// (lowercased, punctuation collapsed to spaces). Sites don't share a spreadsheet
+// template, so uploads go through a mapping step - this table just seeds a best-guess
+// default mapping the HR user can correct.
 const FIELD_SYNONYMS = {
-  fullName: ['name', 'full name', 'employee name', 'worker name', 'staff name'],
-  nationalId: ['nrc', 'national id', 'id number', 'nrc number', 'national registration card'],
-  workerNumber: ['staff no', 'staff number', 'worker no', 'worker number', 'employee no', 'id no'],
-  jobTitle: ['job title', 'role', 'position', 'designation'],
-  payRate: ['rate', 'daily rate', 'monthly rate', 'pay rate', 'wage'],
+  fullName: ['employee name', 'full name', 'worker name', 'staff name', 'name'],
+  jobTitle: ['trade role', 'job title', 'trade', 'role', 'position', 'designation'],
+  payRate: ['hourly rate', 'rate', 'daily rate', 'monthly rate', 'pay rate', 'wage'],
   payRateType: ['rate type', 'pay type', 'payment frequency'],
-  phone: ['phone', 'mobile', 'contact', 'phone number', 'contact number'],
-  nextOfKinName: ['next of kin', 'nok', 'next of kin name', 'kin name'],
-  nextOfKinPhone: ['next of kin phone', 'nok phone', 'kin phone', 'kin contact'],
   contractStartDate: ['start date', 'contract start', 'contract start date', 'date started'],
   contractEndDate: ['end date', 'contract end', 'contract end date', 'expiry date', 'expiry'],
   leaveBalance: ['leave balance', 'leave days', 'leave days remaining', 'balance'],
+
+  // Monthly wage-bill snapshot (e.g. hourly-rate casual wage sheets)
+  daysWorkedWeekday: ['days worked mon fri', 'days worked'],
+  daysWorkedSaturday: ['saturdays worked', 'saturday worked', 'days worked sat'],
+  daysWorkedSundayPH: ['sundays ph worked', 'sunday ph worked', 'sundays worked', 'sunday worked'],
+  normalHoursWeekday: ['normal hours mon fri', 'normal hours weekday'],
+  normalHoursSaturday: ['normal hours sat'],
+  monthlyNormalHoursTarget: ['monthly total normal hours', 'monthly normal hours'],
+  totalNormalHours: ['total normal hours'],
+  basicPay: ['basic pay'],
+  otHoursWeekday: ['ot hours weekday', 'overtime hours weekday'],
+  otHoursSaturday: ['ot hours saturday', 'ot hours sat'],
+  otPaySaturday: ['ot pay 1 5', '1 5x', 'ot pay saturday'],
+  otHoursSundayPH: ['ot hours sunday', 'ot hours ph'],
+  otPaySundayPH: ['ot pay 2 0', '2 0x', 'ot pay sunday'],
+  otPayWeekday: ['ot pay'],
+  housingAllowance: ['housing allowance', 'housing'],
+  transportAllowance: ['transport'],
+  totalPay: ['total pay'],
 };
 
-const normalizeHeader = (header) => String(header || '').trim().toLowerCase();
+// Assignment order matters: more specific synonyms (e.g. "OT Pay (1.5x)") must claim
+// their column before the generic fallbacks (e.g. bare "OT Pay" for the weekday rate,
+// or "name" as a last-resort match for fullName) get a turn at the leftovers.
+const FIELD_MATCH_ORDER = [
+  'contractStartDate', 'contractEndDate', 'leaveBalance',
+  'daysWorkedWeekday', 'daysWorkedSaturday', 'daysWorkedSundayPH',
+  'normalHoursWeekday', 'normalHoursSaturday', 'monthlyNormalHoursTarget', 'totalNormalHours',
+  'basicPay', 'otHoursWeekday', 'otHoursSaturday', 'otPaySaturday', 'otHoursSundayPH', 'otPaySundayPH',
+  'otPayWeekday', 'housingAllowance', 'transportAllowance', 'totalPay',
+  'payRateType', 'payRate', 'jobTitle', 'fullName',
+];
+
+const normalizeHeader = (header) =>
+  String(header || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 const buildSuggestedMapping = (headers) => {
+  const normalized = headers.map(normalizeHeader);
+  const claimed = new Set();
   const mapping = {};
-  Object.entries(FIELD_SYNONYMS).forEach(([field, synonyms]) => {
-    const index = headers.findIndex((h) => synonyms.includes(normalizeHeader(h)));
-    if (index !== -1) mapping[field] = index;
+
+  FIELD_MATCH_ORDER.forEach((field) => {
+    const synonyms = FIELD_SYNONYMS[field] || [];
+    const index = normalized.findIndex((h, i) => !claimed.has(i) && synonyms.some((syn) => h.includes(syn)));
+    if (index !== -1) {
+      mapping[field] = index;
+      claimed.add(index);
+    }
   });
+
   return mapping;
 };
 
@@ -104,7 +143,7 @@ const previewUpload = async (buffer) => {
 
 const coercePayRateType = (value) => {
   const normalized = coerceString(value)?.toLowerCase();
-  return normalized === 'monthly' || normalized === 'daily' ? normalized : null;
+  return ['hourly', 'daily', 'monthly'].includes(normalized) ? normalized : null;
 };
 
 const applyMapping = (row, mapping) => {
@@ -115,24 +154,38 @@ const applyMapping = (row, mapping) => {
 
   return {
     fullName: coerceString(get('fullName')),
-    nationalId: coerceString(get('nationalId')),
-    workerNumber: coerceString(get('workerNumber')),
     jobTitle: coerceString(get('jobTitle')),
     payRate: coerceNumber(get('payRate')),
     payRateType: coercePayRateType(get('payRateType')),
-    phone: coerceString(get('phone')),
-    nextOfKinName: coerceString(get('nextOfKinName')),
-    nextOfKinPhone: coerceString(get('nextOfKinPhone')),
     contractStartDate: coerceDate(get('contractStartDate')),
     contractEndDate: coerceDate(get('contractEndDate')),
     leaveBalance: coerceNumber(get('leaveBalance')),
+
+    daysWorkedWeekday: coerceNumber(get('daysWorkedWeekday')),
+    daysWorkedSaturday: coerceNumber(get('daysWorkedSaturday')),
+    daysWorkedSundayPH: coerceNumber(get('daysWorkedSundayPH')),
+    normalHoursWeekday: coerceNumber(get('normalHoursWeekday')),
+    normalHoursSaturday: coerceNumber(get('normalHoursSaturday')),
+    totalNormalHours: coerceNumber(get('totalNormalHours')),
+    basicPay: coerceNumber(get('basicPay')),
+    otHoursWeekday: coerceNumber(get('otHoursWeekday')),
+    otPayWeekday: coerceNumber(get('otPayWeekday')),
+    otHoursSaturday: coerceNumber(get('otHoursSaturday')),
+    otPaySaturday: coerceNumber(get('otPaySaturday')),
+    otHoursSundayPH: coerceNumber(get('otHoursSundayPH')),
+    otPaySundayPH: coerceNumber(get('otPaySundayPH')),
+    monthlyNormalHoursTarget: coerceNumber(get('monthlyNormalHoursTarget')),
+    housingAllowance: coerceNumber(get('housingAllowance')),
+    transportAllowance: coerceNumber(get('transportAllowance')),
+    totalPay: coerceNumber(get('totalPay')),
   };
 };
 
-// Upserts each row by nationalId (preferred) or (site, workerNumber) as a fallback -
-// whichever the sheet actually provides. Rows with neither are always inserted as new,
-// since there's nothing reliable to match them against on a re-upload.
-const importWorkers = async ({ site, mapping, rows, sourceFileName }) => {
+// Upserts each row by (site, fullName) - these wage-bill sheets carry no NRC or staff
+// number, so name is the only identifier available. The wage-bill figures are a flat,
+// latest-month-only snapshot - re-importing next month's bill overwrites this month's
+// numbers rather than keeping history.
+const importWorkers = async ({ site, mapping, rows, sourceFileName, wageBillMonth, wageBillYear }) => {
   let created = 0;
   let updated = 0;
   let skipped = 0;
@@ -153,16 +206,13 @@ const importWorkers = async ({ site, mapping, rows, sourceFileName }) => {
         ...record,
         site,
         leaveBalance: record.leaveBalance ?? 0,
+        wageBillMonth: wageBillMonth || null,
+        wageBillYear: wageBillYear || null,
         sourceFileName,
         lastUploadedAt: new Date(),
       };
 
-      let existing = null;
-      if (record.nationalId) {
-        existing = await GeneralWorker.findOne({ where: { nationalId: record.nationalId }, transaction: t });
-      } else if (record.workerNumber) {
-        existing = await GeneralWorker.findOne({ where: { site, workerNumber: record.workerNumber }, transaction: t });
-      }
+      const existing = await GeneralWorker.findOne({ where: { site, fullName: record.fullName }, transaction: t });
 
       if (existing) {
         await existing.update(payload, { transaction: t });
@@ -182,11 +232,7 @@ const listGeneralWorkers = async ({ page = 1, limit = 20, search, site, status, 
   const where = {};
 
   if (search) {
-    where[Op.or] = [
-      { fullName: { [Op.iLike]: `%${search}%` } },
-      { nationalId: { [Op.iLike]: `%${search}%` } },
-      { workerNumber: { [Op.iLike]: `%${search}%` } },
-    ];
+    where.fullName = { [Op.iLike]: `%${search}%` };
   }
   if (site) where.site = site;
   if (status) where.status = status;
@@ -212,13 +258,7 @@ const getGeneralWorkerById = async (id) => {
   return worker;
 };
 
-const createGeneralWorker = async (data) => {
-  if (data.nationalId) {
-    const existing = await GeneralWorker.findOne({ where: { nationalId: data.nationalId } });
-    if (existing) throw ApiError.conflict('A worker with this National ID already exists');
-  }
-  return GeneralWorker.create(data);
-};
+const createGeneralWorker = async (data) => GeneralWorker.create(data);
 
 const updateGeneralWorker = async (id, data) => {
   const worker = await GeneralWorker.findByPk(id);

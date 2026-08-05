@@ -1,32 +1,58 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import clsx from 'clsx';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import { previewWorkerUpload, commitWorkerUpload } from '../../services/generalWorkerService';
 
-const SYSTEM_FIELDS = [
+const WORKER_FIELDS = [
   { key: 'fullName', label: 'Full Name', required: true },
-  { key: 'nationalId', label: 'National ID / NRC' },
-  { key: 'workerNumber', label: 'Worker Number' },
-  { key: 'jobTitle', label: 'Job Title' },
-  { key: 'payRate', label: 'Pay Rate' },
-  { key: 'payRateType', label: 'Pay Rate Type (daily/monthly)' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'nextOfKinName', label: 'Next of Kin Name' },
-  { key: 'nextOfKinPhone', label: 'Next of Kin Phone' },
+  { key: 'jobTitle', label: 'Trade / Role' },
   { key: 'contractStartDate', label: 'Contract Start Date' },
   { key: 'contractEndDate', label: 'Contract End Date' },
   { key: 'leaveBalance', label: 'Leave Balance (days)' },
 ];
 
-const emptyState = { step: 1, site: '', file: null, preview: null, mapping: {}, result: null };
+const WAGE_BILL_FIELDS = [
+  { key: 'payRate', label: 'Hourly / Pay Rate' },
+  { key: 'payRateType', label: 'Rate Type (hourly/daily/monthly)' },
+  { key: 'daysWorkedWeekday', label: 'Days Worked (Mon-Fri)' },
+  { key: 'daysWorkedSaturday', label: 'Saturdays Worked' },
+  { key: 'daysWorkedSundayPH', label: 'Sundays/PH Worked' },
+  { key: 'normalHoursWeekday', label: 'Normal Hours (Mon-Fri)' },
+  { key: 'normalHoursSaturday', label: 'Normal Hours (Sat)' },
+  { key: 'totalNormalHours', label: 'Total Normal Hours' },
+  { key: 'monthlyNormalHoursTarget', label: 'Monthly Total Normal Hours' },
+  { key: 'basicPay', label: 'Basic Pay' },
+  { key: 'otHoursWeekday', label: 'OT Hours (Weekdays)' },
+  { key: 'otPayWeekday', label: 'OT Pay (Weekdays)' },
+  { key: 'otHoursSaturday', label: 'OT Hours (Saturday)' },
+  { key: 'otPaySaturday', label: 'OT Pay (1.5x)' },
+  { key: 'otHoursSundayPH', label: 'OT Hours (Sunday/PH)' },
+  { key: 'otPaySundayPH', label: 'OT Pay (2.0x)' },
+  { key: 'housingAllowance', label: 'Housing Allowance' },
+  { key: 'transportAllowance', label: 'Transport Allowance' },
+  { key: 'totalPay', label: 'Total Pay' },
+];
+
+const now = new Date();
+const emptyState = {
+  step: 1,
+  site: '',
+  file: null,
+  preview: null,
+  mapping: {},
+  result: null,
+  wageBillMonth: now.getMonth() + 1,
+  wageBillYear: now.getFullYear(),
+};
 
 export default function UploadWorkersModal({ open, onClose, onImported, sites }) {
   const [state, setState] = useState(emptyState);
   const [loading, setLoading] = useState(false);
-  const { step, site, file, preview, mapping, result } = state;
+  const { step, site, file, preview, mapping, result, wageBillMonth, wageBillYear } = state;
 
   const close = () => {
     setState(emptyState);
@@ -53,9 +79,17 @@ export default function UploadWorkersModal({ open, onClose, onImported, sites })
     }
   };
 
+  const mappedCount = Object.values(mapping).filter((v) => v !== undefined && v !== '').length;
+  const totalFieldCount = WORKER_FIELDS.length + WAGE_BILL_FIELDS.length;
+
   const handleCommit = async () => {
     if (mapping.fullName === undefined || mapping.fullName === '') {
       return toast.error('Full Name must be mapped to a column');
+    }
+    if (mappedCount <= 2 && !confirm(
+      `Only ${mappedCount} of ${totalFieldCount} fields are mapped - most worker data will be left blank. Continue anyway?`
+    )) {
+      return;
     }
     setLoading(true);
     try {
@@ -64,6 +98,8 @@ export default function UploadWorkersModal({ open, onClose, onImported, sites })
         mapping,
         rows: preview.rows,
         fileName: file.name,
+        wageBillMonth,
+        wageBillYear,
       });
       setState((s) => ({ ...s, step: 3, result: data.data }));
     } catch (err) {
@@ -119,6 +155,23 @@ export default function UploadWorkersModal({ open, onClose, onImported, sites })
             accept=".xlsx,.xls"
             onChange={(e) => setState((s) => ({ ...s, file: e.target.files?.[0] || null }))}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Wage bill month (optional)"
+              value={wageBillMonth}
+              onChange={(e) => setState((s) => ({ ...s, wageBillMonth: Number(e.target.value) }))}
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>{new Date(2000, m - 1, 1).toLocaleString('en', { month: 'long' })}</option>
+              ))}
+            </Select>
+            <Input
+              label="Wage bill year (optional)"
+              type="number"
+              value={wageBillYear}
+              onChange={(e) => setState((s) => ({ ...s, wageBillYear: Number(e.target.value) }))}
+            />
+          </div>
         </div>
       )}
 
@@ -128,27 +181,38 @@ export default function UploadWorkersModal({ open, onClose, onImported, sites })
             {preview.totalRows} row{preview.totalRows === 1 ? '' : 's'} detected. Map each field to the matching
             column from the spreadsheet (columns already guessed where possible).
           </p>
+          <p className={clsx('text-xs font-medium', mappedCount <= 2 ? 'text-red-600' : 'text-gray-500')}>
+            {mappedCount} of {totalFieldCount} fields mapped
+          </p>
 
-          <div className="grid grid-cols-2 gap-3">
-            {SYSTEM_FIELDS.map(({ key, label, required }) => (
-              <Select
-                key={key}
-                label={label + (required ? ' *' : '')}
-                value={mapping[key] ?? ''}
-                onChange={(e) =>
-                  setState((s) => ({
-                    ...s,
-                    mapping: { ...s.mapping, [key]: e.target.value === '' ? undefined : Number(e.target.value) },
-                  }))
-                }
-              >
-                <option value="">-- Not in file --</option>
-                {preview.headers.map((h, idx) => (
-                  <option key={idx} value={idx}>{h || `Column ${idx + 1}`}</option>
+          {[
+            { title: 'Worker Details', fields: WORKER_FIELDS },
+            { title: 'Monthly Wage Bill', fields: WAGE_BILL_FIELDS },
+          ].map(({ title, fields }) => (
+            <div key={title}>
+              <p className="text-sm font-medium text-gray-700 mb-2">{title}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {fields.map(({ key, label, required }) => (
+                  <Select
+                    key={key}
+                    label={label + (required ? ' *' : '')}
+                    value={mapping[key] ?? ''}
+                    onChange={(e) =>
+                      setState((s) => ({
+                        ...s,
+                        mapping: { ...s.mapping, [key]: e.target.value === '' ? undefined : Number(e.target.value) },
+                      }))
+                    }
+                  >
+                    <option value="">-- Not in file --</option>
+                    {preview.headers.map((h, idx) => (
+                      <option key={idx} value={idx}>{h || `Column ${idx + 1}`}</option>
+                    ))}
+                  </Select>
                 ))}
-              </Select>
-            ))}
-          </div>
+              </div>
+            </div>
+          ))}
 
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Preview (first {preview.sampleRows.length} rows)</p>
