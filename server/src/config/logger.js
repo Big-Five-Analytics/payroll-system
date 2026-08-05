@@ -16,18 +16,17 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: path.join(__dirname, '../../logs/combined.log'),
     }),
+    // Render (and most PaaS hosts) only capture stdout/stderr - the file transports
+    // above write into the container's ephemeral filesystem, which is invisible in
+    // Render's log viewer and wiped on every restart/redeploy. Console output is what
+    // actually shows up there, so this needs to run in every environment, not just dev.
+    new winston.transports.Console({
+      format:
+        process.env.NODE_ENV === 'production'
+          ? winston.format.combine(winston.format.timestamp(), winston.format.json())
+          : winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    }),
   ],
 });
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      ),
-    })
-  );
-}
 
 module.exports = logger;
