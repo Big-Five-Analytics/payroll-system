@@ -61,6 +61,10 @@ module.exports = {
 
   // Zambian statutory rates - see server/src/utils/payrollCalculator.js for how these are applied
   NAPSA_RATE: 0.05, // 5% of gross earnings (basic salary + all allowances)
+  // NAPSA ceiling is the statutory pensionable-earnings cap, revised annually by NAPSA
+  // in line with National Average Earnings. Currently K37,236/month effective 1 Jan 2026,
+  // capping the employee contribution at K1,861.80. Update this when NAPSA issues a new notice.
+  NAPSA_CEILING: 37236,
   NHIMA_RATE: 0.01, // 1% of basic salary only
 
   AUDIT_ACTIONS: {
