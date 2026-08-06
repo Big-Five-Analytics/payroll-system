@@ -53,6 +53,12 @@ module.exports = {
     MONTHLY: 'monthly',
   },
 
+  REPAYMENT_PLANS: {
+    FULL: 'full',
+    TWO_MONTHS: 'two_months',
+    THREE_MONTHS: 'three_months',
+  },
+
   NOTIFICATION_TYPES: {
     LEAVE_STATUS: 'leave_status',
     SALARY_ADVANCE_STATUS: 'salary_advance_status',

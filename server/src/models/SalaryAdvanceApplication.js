@@ -18,6 +18,14 @@ module.exports = (sequelize, DataTypes) => {
         validate: { min: 0.01 },
       },
       reason: { type: DataTypes.TEXT, allowNull: false },
+      // Informational only - HR/Finance sees this as the employee's stated preference,
+      // but the payroll engine (payrollService.generatePayroll) always recovers the
+      // full amount from the next payroll run regardless of what's selected here.
+      repaymentPlan: {
+        type: DataTypes.ENUM('full', 'two_months', 'three_months'),
+        allowNull: true,
+      },
+      dateRequested: { type: DataTypes.DATEONLY, allowNull: true },
       status: {
         type: DataTypes.ENUM('pending', 'approved', 'rejected'),
         defaultValue: 'pending',

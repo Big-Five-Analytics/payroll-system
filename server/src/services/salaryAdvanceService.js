@@ -2,11 +2,13 @@ const { SalaryAdvanceApplication, Employee, Department, User } = require('../mod
 const ApiError = require('../utils/ApiError');
 const { REQUEST_STATUS } = require('../config/constants');
 
-const applyForAdvance = async (employeeId, { amountRequested, reason }) => {
+const applyForAdvance = async (employeeId, { amountRequested, reason, repaymentPlan }) => {
   return SalaryAdvanceApplication.create({
     employeeId,
     amountRequested,
     reason,
+    repaymentPlan,
+    dateRequested: new Date(),
     status: REQUEST_STATUS.PENDING,
   });
 };

@@ -12,6 +12,12 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Pagination from '../../components/ui/Pagination';
 
+const REPAYMENT_PLAN_LABELS = {
+  full: 'Full deduction (next payroll)',
+  two_months: 'Over 2 months',
+  three_months: 'Over 3 months',
+};
+
 export default function AdvanceApprovals() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +79,7 @@ export default function AdvanceApprovals() {
                 <th className="py-2 pr-4 font-medium">Employee</th>
                 <th className="py-2 pr-4 font-medium">Amount</th>
                 <th className="py-2 pr-4 font-medium">Reason</th>
+                <th className="py-2 pr-4 font-medium">Repayment Plan</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
                 <th className="py-2 pr-4 font-medium text-right">Actions</th>
               </tr>
@@ -86,6 +93,7 @@ export default function AdvanceApprovals() {
                   </td>
                   <td className="py-3 pr-4 text-gray-600">ZMW {Number(a.amountRequested).toLocaleString()}</td>
                   <td className="py-3 pr-4 text-gray-600 max-w-xs truncate" title={a.reason}>{a.reason}</td>
+                  <td className="py-3 pr-4 text-gray-600">{REPAYMENT_PLAN_LABELS[a.repaymentPlan] || '-'}</td>
                   <td className="py-3 pr-4"><Badge status={a.status} /></td>
                   <td className="py-3 pr-4 text-right">
                     {a.status === 'pending' && (
@@ -124,7 +132,8 @@ export default function AdvanceApprovals() {
         {reviewTarget?.decision === 'approved' && (
           <p className="text-xs text-gray-500 mt-3">
             Approving this automatically deducts the full amount from this employee's next
-            payroll run - no manual deduction setup needed.
+            payroll run - no manual deduction setup needed. This happens regardless of the
+            repayment plan they selected; it's shown for your information only.
           </p>
         )}
       </Modal>
