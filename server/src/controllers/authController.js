@@ -4,15 +4,25 @@ const authService = require('../services/authService');
 const { logAudit } = require('../middleware/auditLogger');
 const { AUDIT_ACTIONS } = require('../config/constants');
 
+// Frontend and backend are deployed on different onrender.com subdomains, which
+// browsers treat as different sites (Render is on the Public Suffix List so its
+// per-customer subdomains don't share cookie scope) - so this cookie must be
+// SameSite=None to be sent on cross-site requests at all. None requires Secure,
+// which is already tied to the same production check. Locally (shared "localhost"
+// site) this is same-site regardless, so 'lax' there is just a safer default.
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+};
+
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   console.log('LOGIN ATTEMPT RECEIVED FOR:', email);
   const { user, accessToken, refreshToken } = await authService.login(email, password);
 
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    ...REFRESH_COOKIE_OPTIONS,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
@@ -35,7 +45,7 @@ const refresh = asyncHandler(async (req, res) => {
 
 const logout = asyncHandler(async (req, res) => {
   await authService.logout(req.user.id);
-  res.clearCookie('refreshToken');
+  res.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
 
   await logAudit({
     userId: req.user.id,
