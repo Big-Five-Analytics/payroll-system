@@ -4,7 +4,7 @@ const ApiError = require('../utils/ApiError');
 const leaveService = require('../services/leaveService');
 const notificationService = require('../services/notificationService');
 const { logAudit } = require('../middleware/auditLogger');
-const { AUDIT_ACTIONS, NOTIFICATION_TYPES } = require('../config/constants');
+const { AUDIT_ACTIONS, NOTIFICATION_TYPES, ROLES } = require('../config/constants');
 
 const requireEmployeeSelf = (req) => {
   if (!req.user.employeeId) {
@@ -23,6 +23,15 @@ const apply = asyncHandler(async (req, res) => {
     entityType: 'LeaveApplication',
     entityId: application.id,
     ipAddress: req.ip,
+  });
+
+  await notificationService.notifyRoles([ROLES.ADMIN, ROLES.HR], {
+    type: NOTIFICATION_TYPES.LEAVE_SUBMITTED,
+    title: 'New leave request',
+    message: `${req.user.firstName} ${req.user.lastName} submitted a ${application.leaveType} leave request (${application.startDate} to ${application.endDate}).`,
+    link: '/approvals/leave',
+    entityType: 'LeaveApplication',
+    entityId: application.id,
   });
 
   ApiResponse.send(res, 201, application, 'Leave application submitted');

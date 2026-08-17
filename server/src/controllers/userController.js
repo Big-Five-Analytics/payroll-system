@@ -34,9 +34,21 @@ const reactivateUser = asyncHandler(async (req, res) => {
   ApiResponse.send(res, 200, user, 'User reactivated');
 });
 
+const resetPassword = asyncHandler(async (req, res) => {
+  const { user, newPassword } = await userService.resetUserPassword(req.params.id);
+  const safeUser = user.toJSON();
+  delete safeUser.password;
+  ApiResponse.send(
+    res,
+    200,
+    { user: safeUser, newPassword },
+    'Password reset - share the new password with the user securely, they will be prompted to change it after logging in'
+  );
+});
+
 const listRoles = asyncHandler(async (req, res) => {
   const roles = await userService.listRoles();
   ApiResponse.send(res, 200, roles, 'Roles retrieved');
 });
 
-module.exports = { listUsers, createUser, updateUser, deactivateUser, reactivateUser, listRoles };
+module.exports = { listUsers, createUser, updateUser, deactivateUser, reactivateUser, resetPassword, listRoles };

@@ -14,5 +14,6 @@ router.post('/', registerUserValidator, validate, userController.createUser);
 router.put('/:id', userController.updateUser);
 router.patch('/:id/deactivate', userController.deactivateUser);
 router.patch('/:id/reactivate', userController.reactivateUser);
+router.patch('/:id/reset-password', userController.resetPassword);
 
 module.exports = router;

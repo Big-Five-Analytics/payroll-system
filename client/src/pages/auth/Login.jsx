@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import Input from '../../components/ui/Input';
@@ -50,6 +50,9 @@ export default function Login() {
           <Button type="submit" disabled={submitting} className="w-full mt-2">
             {submitting ? 'Signing in...' : 'Sign In'}
           </Button>
+          <Link to="/forgot-password" className="text-sm text-center text-gray-500 hover:text-brand-600">
+            Forgot password?
+          </Link>
         </form>
       </div>
     </div>

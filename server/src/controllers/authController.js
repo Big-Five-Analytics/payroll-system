@@ -58,4 +58,14 @@ const changePassword = asyncHandler(async (req, res) => {
   ApiResponse.send(res, 200, null, 'Password changed successfully');
 });
 
-module.exports = { login, refresh, logout, me, changePassword };
+const forgotPassword = asyncHandler(async (req, res) => {
+  await authService.requestPasswordReset(req.body.email);
+  ApiResponse.send(
+    res,
+    200,
+    null,
+    'If an account exists with that email, an administrator has been notified and will reach out with a new password.'
+  );
+});
+
+module.exports = { login, refresh, logout, me, changePassword, forgotPassword };

@@ -22,4 +22,8 @@ const changePasswordValidator = [
     .withMessage('New password must contain at least one number'),
 ];
 
-module.exports = { loginValidator, registerUserValidator, changePasswordValidator };
+const forgotPasswordValidator = [
+  body('email').isEmail().withMessage('A valid email is required').normalizeEmail(),
+];
+
+module.exports = { loginValidator, registerUserValidator, changePasswordValidator, forgotPasswordValidator };

@@ -69,6 +69,21 @@ const setUserActive = async (id, isActive) => {
   return user;
 };
 
+// Admin-mediated password reset - there's no email delivery configured, so instead of a
+// self-service token link, an admin generates a fresh password here and shares it with
+// the user directly (same one-time-display pattern as createUser's defaultPassword).
+const resetUserPassword = async (id) => {
+  const user = await User.findByPk(id);
+  if (!user) throw ApiError.notFound('User not found');
+
+  const newPassword = generateDefaultPassword();
+  user.password = newPassword;
+  user.mustChangePassword = true;
+  await user.save();
+
+  return { user, newPassword };
+};
+
 const listRoles = () => Role.findAll({ order: [['name', 'ASC']] });
 
-module.exports = { listUsers, createUser, updateUser, setUserActive, listRoles };
+module.exports = { listUsers, createUser, updateUser, setUserActive, resetUserPassword, listRoles };

@@ -61,8 +61,11 @@ module.exports = {
 
   NOTIFICATION_TYPES: {
     LEAVE_STATUS: 'leave_status',
+    LEAVE_SUBMITTED: 'leave_submitted',
     SALARY_ADVANCE_STATUS: 'salary_advance_status',
+    SALARY_ADVANCE_SUBMITTED: 'salary_advance_submitted',
     PAYSLIP_READY: 'payslip_ready',
+    PASSWORD_RESET_REQUESTED: 'password_reset_requested',
   },
 
   // Zambian statutory rates - see server/src/utils/payrollCalculator.js for how these are applied

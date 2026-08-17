@@ -1,6 +1,8 @@
 const { User, Role } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+const notificationService = require('./notificationService');
+const { ROLES, NOTIFICATION_TYPES } = require('../config/constants');
 
 const login = async (email, password) => {
   const user = await User.scope('withPassword').findOne({
@@ -65,4 +67,22 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   await user.save();
 };
 
-module.exports = { login, refresh, logout, changePassword };
+// No email delivery is configured for this app, so "forgot password" is admin-mediated:
+// Administrators are notified in-app and issue a new password via the Users page. The
+// caller always gets the same generic response regardless of the outcome here, so this
+// never confirms or denies whether an email belongs to an account.
+const requestPasswordReset = async (email) => {
+  const user = await User.findOne({ where: { email } });
+  if (!user) return;
+
+  await notificationService.notifyRoles([ROLES.ADMIN], {
+    type: NOTIFICATION_TYPES.PASSWORD_RESET_REQUESTED,
+    title: 'Password reset requested',
+    message: `${user.firstName} ${user.lastName} (${user.email}) has requested a password reset.`,
+    link: '/admin/users',
+    entityType: 'User',
+    entityId: user.id,
+  });
+};
+
+module.exports = { login, refresh, logout, changePassword, requestPasswordReset };

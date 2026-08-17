@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Ban, CheckCircle2, Copy } from 'lucide-react';
+import { Plus, Ban, CheckCircle2, Copy, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import {
@@ -8,6 +8,7 @@ import {
   createUser,
   deactivateUser,
   reactivateUser,
+  resetUserPassword,
   getEmployeesWithoutAccount,
 } from '../../services/userService';
 import Card from '../../components/ui/Card';
@@ -25,6 +26,7 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [createdCredential, setCreatedCredential] = useState(null); // { email, defaultPassword }
+  const [resetCredential, setResetCredential] = useState(null); // { email, newPassword }
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm();
 
   const selectedRoleId = watch('roleId');
@@ -85,6 +87,23 @@ export default function Users() {
     toast.success('Copied to clipboard');
   };
 
+  const handleResetPassword = async (user) => {
+    try {
+      const { data } = await resetUserPassword(user.id);
+      setResetCredential({ email: user.email, newPassword: data.data.newPassword });
+      fetchUsers();
+    } catch {
+      toast.error('Failed to reset password');
+    }
+  };
+
+  const copyResetCredential = () => {
+    navigator.clipboard.writeText(
+      `Email: ${resetCredential.email}\nNew password: ${resetCredential.newPassword}`
+    );
+    toast.success('Copied to clipboard');
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -123,6 +142,13 @@ export default function Users() {
                     <Badge status={u.isActive ? 'active' : 'terminated'}>{u.isActive ? 'Active' : 'Inactive'}</Badge>
                   </td>
                   <td className="py-3 pr-4 text-right">
+                    <button
+                      onClick={() => handleResetPassword(u)}
+                      title="Reset password"
+                      className="text-gray-400 hover:text-brand-600 mr-3"
+                    >
+                      <KeyRound size={16} />
+                    </button>
                     <button onClick={() => toggleActive(u)} className="text-gray-400 hover:text-brand-600">
                       {u.isActive ? <Ban size={16} /> : <CheckCircle2 size={16} />}
                     </button>
@@ -201,6 +227,30 @@ export default function Users() {
                 <p>Password: {createdCredential.defaultPassword}</p>
               </div>
               <button onClick={copyCredential} className="text-gray-400 hover:text-brand-600">
+                <Copy size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={!!resetCredential}
+        onClose={() => setResetCredential(null)}
+        title="Password Reset"
+        footer={<Button onClick={() => setResetCredential(null)}>Done</Button>}
+      >
+        {resetCredential && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-600">
+              Share this new password with the user through a secure channel. This password is shown only once.
+            </p>
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 font-mono text-sm flex items-center justify-between">
+              <div>
+                <p>Email: {resetCredential.email}</p>
+                <p>New password: {resetCredential.newPassword}</p>
+              </div>
+              <button onClick={copyResetCredential} className="text-gray-400 hover:text-brand-600">
                 <Copy size={16} />
               </button>
             </div>
